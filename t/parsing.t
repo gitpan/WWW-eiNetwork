@@ -124,7 +124,7 @@ my $expected_items =
 
 my $ein = WWW::eiNetwork->new(
     card_number => '1234567890',
-    name        => 'John Smith',
+    pin_number  => '1234',
 );
 
 my @holds = $ein->holds(html => $holds_html);

@@ -6,14 +6,14 @@ use Carp;
 use HTML::TableContentParser;
 use WWW::Mechanize;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub new
 {
     my ($class, %args) = @_;
 
-    croak "You must specify your name"                unless $args{name};
     croak "You must specify your library card number" unless $args{card_number};
+    croak "You must specify your PIN number"          unless $args{pin_number};
 
     # Strip trailing slash from URL prefix
     my $prefix = $args{url_prefix} || '';
@@ -21,9 +21,9 @@ sub new
 
     my $self =
     {
-        name            => $args{name},
-        card_number     => $args{card_number},
-        url_prefix      => $prefix || 'https://iiisy1.einetwork.net/patroninfo~S1',
+        card_number => $args{card_number},
+        pin_number  => $args{pin_number},
+        url_prefix  => $prefix || 'https://iiisy1.einetwork.net/patroninfo~S1',
     };
 
     bless $self, $class;
@@ -36,13 +36,13 @@ sub _login
 
     my $mech = WWW::Mechanize->new;
     $mech->get($self->{url_prefix});
-    $mech->form_with_fields('name', 'code');
-    $mech->field('name', $self->{name});
+    $mech->form_with_fields(qw(code pin));
     $mech->field('code', $self->{card_number});
+    $mech->field('pin', $self->{pin_number});
     $mech->click('submit');
 
     my $uri = $mech->uri;
-    if ($uri =~ /patroninfo\/(\d+)\//)
+    if ($uri =~ /patroninfo~S1\/(\d+)\//)
     {
         $self->{patron_id} = $1;
         $self->{mech}      = $mech;
@@ -189,10 +189,10 @@ WWW::eiNetwork - Perl interface to Allegheny County, PA libraries
 
   use WWW::eiNetwork;
 
-  my $ein = Net::eiNetwork->new(
-      card_number     => '23456000000000',
-      name            => 'John Smith',
-      url_prefix      => 'https://iiisy1.einetwork.net/patroninfo~S1', #optional
+  my $ein = WWW::eiNetwork->new(
+      card_number => '23456000000000',
+      pin_number  => '1234',
+      url_prefix  => 'https://iiisy1.einetwork.net/patroninfo~S1', #optional
   );
 
   my @holds = $ein->holds;
@@ -220,33 +220,25 @@ WWW::eiNetwork - Perl interface to Allegheny County, PA libraries
   
 =head1 DESCRIPTION
 
-This module provides an object-oriented Perl interface to eiNetwork libraries in Allegheny County,
-Pennsylvania.
+This module provides an object-oriented Perl interface to eiNetwork libraries in Allegheny County, Pennsylvania.
 
 =head1 DEPENDENCIES
 
-WWW::Mechanize
-HTML::TableContentParser
-Crypt::SSLeay or IO::Socket::SSL
+WWW::Mechanize, HTML::TableContentParser, Crypt::SSLeay or IO::Socket::SSL
 
 =head1 BUGS
 
-The eiNetwork doesn't provide a public API - this module uses screen scraping to pull data directly
-from the HTML on their site. While I made an effort to code this module in such a way that small
-changes to the site layout and table arrangement won't break the module, any number of changes to
-the EIN's site could break this module.
+The eiNetwork doesn't provide a public API - this module uses screen scraping to pull data directly from the HTML on their site. While I made an effort to code this module in such a way that small changes to the site layout and table arrangement won't break the module, any number of changes to the EIN's site could break this module.
 
 =head1 DISCLAIMER
 
-The author of this module is not affiliated in any way with the EINetwork or any Allegheny County
-library.
+The author of this module is not affiliated in any way with the EINetwork or any Allegheny County library.
 
 =head1 ACKNOWLEDGMENTS
 
 Thanks to:
 
-Adam Foxson (L<http://search.cpan.org/~Fhoxh>) for the great newbie's tutorial to contributing to
-CPAN at the Pittsburgh Perl Workshop (L<http://pghpw.org/ppw2007/>).
+Adam Foxson (L<http://search.cpan.org/~Fhoxh>) for the great newbie's tutorial to contributing to CPAN at the Pittsburgh Perl Workshop (L<http://pghpw.org/ppw2007/>).
 
 Bob O'Neill (L<http://search.cpan.org/~BOBO>) for sharing his CPAN know-how.
 
@@ -254,8 +246,7 @@ Bob O'Neill (L<http://search.cpan.org/~BOBO>) for sharing his CPAN know-how.
 
 Copyright (C) 2008 Michael Aquilina. All rights reserved.
 
-This code is free software; you can redistribute it and/or modify it under the same terms as Perl
-itself.
+This code is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
